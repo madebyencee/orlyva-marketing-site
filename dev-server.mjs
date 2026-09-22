@@ -1,6 +1,6 @@
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";
-import { extname, join, normalize } from "node:path";
+import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
 
@@ -15,16 +15,14 @@ const mime = {
 };
 
 createServer((req, res) => {
-  const urlPath = decodeURIComponent((req.url || "/").split("?")[0]);
-  let filePath = join(here, normalize(urlPath).replace(/^(\.\.[/\])+/, ""));
-  if (urlPath === "/" || !existsSync(filePath) || statSync(filePath).isDirectory()) {
+  const pathname = decodeURIComponent((req.url || "/").split("?")[0]);
+  const relative = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+  let filePath = join(here, relative);
+
+  if (!existsSync(filePath) || statSync(filePath).isDirectory()) {
     filePath = join(here, "index.html");
   }
-  if (!existsSync(filePath)) {
-    res.writeHead(404);
-    res.end("Not found");
-    return;
-  }
+
   res.writeHead(200, {
     "content-type": mime[extname(filePath)] || "application/octet-stream",
     "cache-control": "no-store"
